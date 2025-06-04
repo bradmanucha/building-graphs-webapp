@@ -51,6 +51,9 @@
 import { onMounted } from 'vue'
 import { ref } from 'vue'
 import { OpenAI } from 'openai'
+import {useStore} from '@/stores/store'
+
+const store = useStore()
 
 const inputMessage = ref('')
 const allMessages = ref([])
@@ -58,7 +61,7 @@ var sendLoading = ref(false)
 
 onMounted(() => {
 })
-console.log(import.meta.env)
+
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
   dangerouslyAllowBrowser: true
@@ -72,17 +75,17 @@ async function sendRequest(){
     type: 'userMessage'
   })
 
-  try {
-    const res = await fetch('/miserables.json')
-    const graphjson = await res.json()
+  const graphjson = store.graphJSON
+  let compressed = compressGraphData(graphjson)
 
+  try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o',
       messages: [
-        { role: 'system', content: 'You are a graph analyst. Answer questions about a network graph structure. When you respond please give your answer in html format' },
+        { role: 'system', content: 'You are a graph analyst. Answer questions about a network graph structure that is generated from building IFC data. When you respond please give your answer in html format, but please dont wrap the response in any extra text like ```html.' },
         {
           role: 'user',
-          content: `This is the graph structure (nodes and links in JSON format):\n\n${JSON.stringify(graphjson)}\n\nPlease answer the following question:\n${inputMessage.value}`
+          content: `This is the graph structure (nodes and links in JSON format):\n\n${JSON.stringify(compressed)}\n\nPlease answer the following question:\n${inputMessage.value}`
         }
       ]
     })
@@ -107,6 +110,40 @@ async function sendRequest(){
   }
   inputMessage.value = ''
   sendLoading = false
+}
+
+function compressGraphData(original) {
+  const nodeIdMap = new Map();
+  const compressedNodes = [];
+  const compressedLinks = [];
+
+  original.nodes.forEach((node, index) => {
+    const shortId = `n${index}`;
+    nodeIdMap.set(node.id, shortId);
+
+    compressedNodes.push({
+      id: shortId,
+      name: node.Name,
+      type: node.IfcType,
+      category: node.category,
+      description: node.Description
+    });
+  });
+
+  original.links.forEach((link, index) => {
+    const sourceId = nodeIdMap.get(link.source.id || link.source);
+    const targetId = nodeIdMap.get(link.target.id || link.target);
+
+    compressedLinks.push({
+      source: sourceId,
+      target: targetId,
+    });
+  });
+
+  return {
+    nodes: compressedNodes,
+    links: compressedLinks
+  };
 }
 </script>
 
