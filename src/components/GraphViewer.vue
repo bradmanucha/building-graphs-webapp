@@ -22,8 +22,6 @@ onMounted(async () => {
   
   let formattedGraphJson = convertToGraphFormat(nodeData, edgeData)
   store.graphJSON = formattedGraphJson
-  let copy = JSON.parse(JSON.stringify(formattedGraphJson))
-  console.log(formattedGraphJson)
 
   const Graph = ForceGraph3D()(document.getElementById('3d-graph'))
     .graphData(formattedGraphJson)

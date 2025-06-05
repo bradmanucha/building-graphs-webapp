@@ -48,7 +48,6 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
 import { ref } from 'vue'
 import { OpenAI } from 'openai'
 import {useStore} from '@/stores/store'
@@ -58,9 +57,6 @@ const store = useStore()
 const inputMessage = ref('')
 const allMessages = ref([])
 var sendLoading = ref(false)
-
-onMounted(() => {
-})
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
