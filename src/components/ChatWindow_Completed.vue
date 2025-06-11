@@ -66,24 +66,47 @@ const openai = new OpenAI({
 })
 
 async function sendRequest(){
-  //Step 1: Show that the request is being sent
   sendLoading = true
   
-  //Step 2: Add user's message to the chat
   allMessages.value.push({
     message: inputMessage.value,
     type: 'userMessage'
   })
 
-  //Step 3: Get the graph data and simplify
+  const graphjson = store.graphJSON
+  
+  let compressed = compressGraphData(graphjson)
 
-  //Step 4: Send the request to Open AI (https://platform.openai.com/docs/api-reference/chat/create)
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: 'You are a graph analyst. Answer questions about a network graph structure that is generated from building IFC data. When you respond please give your answer in html format, but please dont wrap the response in any extra text like ```html.' },
+        {
+          role: 'user',
+          content: `This is the graph structure (nodes and links in JSON format):\n\n${JSON.stringify(compressed)}\n\nPlease answer the following question:\n${inputMessage.value}`
+        }
+      ]
+    })
 
-  //Step 5: Handle response
+    console.log(response)
 
-  //Step 6: Add response to allMessages
+    const aiMessage = response?.choices?.[0]?.message?.content
 
-  //Step 7: Reset the input and stop Loading
+    if (!aiMessage) {
+      console.warn('No AI message found in response.')
+    } else {
+      allMessages.value.push({
+        message: aiMessage,
+        type: 'openAIResponse'
+      })
+    }
+  } catch (error) {
+    allMessages.value.push({
+      message: 'Error: Unable to process your request at the moment.',
+      type: 'openAIResponse'
+    })
+  }
   inputMessage.value = ''
   sendLoading = false
 }

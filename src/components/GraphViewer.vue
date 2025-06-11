@@ -1,7 +1,5 @@
 <template>
-  <div id="3d-graph" style="height: 500px !important">
-
-  </div> 
+  <div id="3d-graph"></div> 
 </template>
 
 <script setup>
@@ -23,7 +21,9 @@ onMounted(async () => {
   let formattedGraphJson = convertToGraphFormat(nodeData, edgeData)
   store.graphJSON = formattedGraphJson
 
-  const Graph = ForceGraph3D()(document.getElementById('3d-graph'))
+  let graphDiv = document.getElementById('3d-graph')
+
+  const Graph = new ForceGraph3D(graphDiv)
     .graphData(formattedGraphJson)
     .nodeLabel('nodeLabel')
     .nodeAutoColorBy('IfcType')
