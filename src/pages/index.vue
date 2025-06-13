@@ -1,7 +1,7 @@
 <template>
   <div class="d-flex">
     <div style="width: 25%;">
-      <ChatWindow />
+      <ChatWindow_Completed />
     </div>
 
     <div style="width: 75%;">
