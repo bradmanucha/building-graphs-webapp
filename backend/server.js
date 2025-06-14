@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const neo4j = require('neo4j-driver');
+const { naturalLanguageToCypher, summarizeQueryResult } = require('./openai');
+const { runCypher } = require('./graph');
 
 const app = express();
 app.use(cors());
@@ -12,7 +14,7 @@ const driver = neo4j.driver(
   neo4j.auth.basic("neo4j", "l76b6YjwTXUDsDUFDx7WG8lZg8RJH1XyFJmf37IT9I4")
 );
 
-// 🔹 Test route — returns 5 nodes
+// Test route (optional)
 app.get('/api/nodes', async (req, res) => {
   const session = driver.session();
 
@@ -27,7 +29,7 @@ app.get('/api/nodes', async (req, res) => {
   }
 });
 
-// 🔹 Flexible route — accepts a Cypher query from frontend or LLM
+// Raw Cypher query route
 app.post('/api/query', async (req, res) => {
   const { cypher } = req.body;
   const session = driver.session();
@@ -43,7 +45,30 @@ app.post('/api/query', async (req, res) => {
   }
 });
 
-// 🔹 Start the server
+// Natural language query route
+app.post('/api/nl-query', async (req, res) => {
+  const { question } = req.body;
+
+  try {
+    // Step 1: NL → Cypher
+    const cypher = await naturalLanguageToCypher(question);
+
+    // Step 2: Run Cypher on Neo4j
+    const result = await runCypher(cypher, driver);
+
+    // Step 3: LLM explains the result
+    const explanation = await summarizeQueryResult(result);
+
+    res.json({
+      cypher,
+      explanation,
+      rawData: result
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
